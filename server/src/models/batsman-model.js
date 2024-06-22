@@ -25,7 +25,11 @@ const batsmanSchema = new Schema(
       type: Number,
       default: 0,
     },
-    status: String, // "not out", "out", "yet to bat"
+    status: {
+      type: String,
+      enum: ["not out", "out"],
+      default: "not out",
+    }, // "not out", "out", "yet to bat"
     isStriker: Boolean, // True if currently the striker
   },
   { timestamps: true }

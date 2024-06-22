@@ -17,7 +17,10 @@ const ballSchema = new Schema(
       ref: "Player",
       required: [true, "bowler id is required"],
     },
-    runs: Number,
+    runs: {
+      type: Number,
+      default: 0,
+    },
     extras: {
       type: { type: String },
       runs: Number,

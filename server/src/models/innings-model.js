@@ -13,6 +13,12 @@ const inningsSchema = new Schema(
         ref: "Player",
       },
     ],
+    bowlers: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "Player",
+      },
+    ],
     teamId: {
       type: Schema.Types.ObjectId,
       ref: "Team",

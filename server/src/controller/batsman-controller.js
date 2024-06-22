@@ -43,9 +43,18 @@ export const handle_get_single_batsman = async (req, res, next) => {
 export const handle_create_batsman = async (req, res, next) => {
   try {
     const inningsId = req.params.inningsId;
-    const { teamId, playerId } = req.body;
+    const { teamId, playerId, isStriker } = req.body;
+    if (!teamId) {
+      throw createError(400, "team id is required");
+    }
+    if (!playerId) {
+      throw createError(400, "player id is required");
+    }
+    if (!isStriker) {
+      throw createError(400, "isStriker is required");
+    }
 
-    const innings = await Innings.findById(inningsId);
+    const innings = await Innings.findOne({ teamId, _id: inningsId });
     if (!innings) {
       throw createError(404, "No innings found.");
     }
@@ -62,7 +71,12 @@ export const handle_create_batsman = async (req, res, next) => {
       throw createError(400, "Player is not playing of this innings");
     }
 
-    const batsman = await Batsman.create({ teamId, playerId, inningsId });
+    const batsman = await Batsman.create({
+      teamId,
+      playerId,
+      inningsId,
+      isStriker,
+    });
     return successResponse(res, {
       message: "Batsman created successfull",
       statusCode: 201,

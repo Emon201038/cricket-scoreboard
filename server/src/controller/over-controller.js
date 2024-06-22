@@ -7,8 +7,16 @@ import createError from "http-errors";
 
 export const handleGetAllOverOfAnInnings = async (req, res, next) => {
   try {
-    console.log(req.params);
-    return successResponse(res, { message: "Over fetched successfull." });
+    const inningsId = req.params.inningsId;
+    if (!inningsId) {
+      throw createError(400, "Please enter an innings id");
+    }
+
+    const overs = await Over.find({ inningsId });
+    return successResponse(res, {
+      message: "Over fetched successfull.",
+      payload: overs,
+    });
   } catch (error) {
     next(error);
   }

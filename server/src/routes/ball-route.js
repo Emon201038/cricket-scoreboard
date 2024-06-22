@@ -12,10 +12,10 @@ const ballRouter = express.Router();
 ballRouter.get("/get/:id([A-Fa-f0-9]{24})", handleGetSingleBall);
 
 // GET: /api/v1/balls/:id(overId)
-ballRouter.get("/:id([A-Fa-f0-9]{24})", handleGetAllBallsOfAnOver);
+ballRouter.get("/:overId([A-Fa-f0-9]{24})", handleGetAllBallsOfAnOver);
 
 // POST: /api/v1/balls/:id(overId)
-ballRouter.post("/:id([A-Fa-f0-9]{24})", handleCreateBall);
+ballRouter.post("/:overId([A-Fa-f0-9]{24})", handleCreateBall);
 
 // POST: /api/v1/balls/edit/:id(ballId)
 ballRouter.put("/edit/:id([A-Fa-f0-9]{24})", handleEditBall);
