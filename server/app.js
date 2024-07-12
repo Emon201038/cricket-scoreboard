@@ -8,6 +8,7 @@ import { ballRouter } from "./src/routes/ball-route.js";
 import { playerRouter } from "./src/routes/player-route.js";
 import { inningsRouter } from "./src/routes/innings-route.js";
 import { batsmanRouter } from "./src/routes/batsman-route.js";
+import { bowlerRouter } from "./src/routes/bowler-route.js";
 
 const app = express();
 
@@ -15,7 +16,12 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use(morgan("dev"));
-app.use(cors());
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  })
+);
 
 app.use("/api/v1/matches", matchRouter);
 app.use("/api/v1/teams", teamRouter);
@@ -24,6 +30,7 @@ app.use("/api/v1/balls", ballRouter);
 app.use("/api/v1/players", playerRouter);
 app.use("/api/v1/innings", inningsRouter);
 app.use("/api/v1/batsman", batsmanRouter);
+app.use("/api/v1/bowler", bowlerRouter);
 
 app.use((req, res, next) => {
   res.status(400).json({

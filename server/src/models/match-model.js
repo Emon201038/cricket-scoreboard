@@ -25,9 +25,17 @@ const matchSchema = new Schema(
     },
     teams: [
       {
-        type: Schema.Types.ObjectId,
-        required: [true, "team id is required"],
-        ref: "Team",
+        team: {
+          type: Schema.Types.ObjectId,
+          required: [true, "team id is required"],
+          ref: "Team",
+        },
+        playingXi: [
+          {
+            type: Schema.Types.ObjectId,
+            ref: "Player",
+          },
+        ],
       },
     ],
     Innings: [

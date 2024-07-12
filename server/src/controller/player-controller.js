@@ -27,7 +27,7 @@ export const handleGetAllPlayersOfATeam = async (req, res, next) => {
 export const handleGetSinglePlayer = async (req, res, next) => {
   try {
     const id = req.params.id;
-    const player = await Player.findById(id);
+    const player = await Player.findById(id).populate("team", "name");
     if (!player) {
       throw createError(404, "No player found.");
     }

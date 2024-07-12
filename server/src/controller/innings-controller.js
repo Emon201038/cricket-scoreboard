@@ -10,7 +10,69 @@ export const handle_get_all_innings_of_a_match = async (req, res, next) => {
   try {
     const id = req.params.matchId;
 
-    const innings = await Innings.find({ matchId: id });
+    const match = await Match.findById(id)
+      .populate([
+        {
+          path: "teams",
+          model: Team,
+          select: "name",
+        },
+        {
+          path: "toss.winner",
+          model: Team,
+          select: "name",
+        },
+      ])
+      .lean();
+    if (!match) {
+      throw createError(404, "No match found");
+    }
+
+    const innings = await Innings.find({ matchId: id })
+      .populate([
+        {
+          path: "matchId",
+          model: Match,
+          select: ["createdAt", "teams", "toss"],
+          populate: {
+            path: "teams",
+            model: "Team",
+            populate: {
+              path: "playingXi",
+              select: "name",
+            },
+          },
+        },
+        {
+          path: "overs",
+          select: ["balls", "runs", "wicket", "bowler"],
+          populate: [
+            {
+              path: "bowler",
+              select: "name",
+            },
+            {
+              path: "balls",
+              select: "extras",
+            },
+          ],
+        },
+
+        {
+          path: "playingPlayers",
+          select: "name",
+        },
+        {
+          path: "fallsOfWicket.batsman",
+          select: "player",
+          populate: {
+            path: "player",
+            select: "name",
+          },
+        },
+      ])
+      .lean();
+
     return successResponse(res, {
       message: "Innings are fetched successfull.",
       statusCode: 200,
@@ -25,11 +87,17 @@ export const handle_get_single_innings = async (req, res, next) => {
   try {
     const id = req.params.inningsId;
 
-    const innings = await Innings.findById(id).populate({
-      path: "playingPlayers",
-      model: "Player",
-      select: ["name", "role"],
-    });
+    const innings = await Innings.findById(id)
+      .populate({
+        path: "playingPlayers",
+        model: "Player",
+        select: ["name", "role"],
+      })
+      .populate({
+        path: "matchId",
+        model: Match,
+        select: ["toss", "teams"],
+      });
     if (!innings) {
       throw createError(404, "No innings found.");
     }

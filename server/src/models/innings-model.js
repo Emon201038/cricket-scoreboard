@@ -31,6 +31,10 @@ const inningsSchema = new Schema(
       type: Number,
       default: 0,
     },
+    balls: {
+      type: Number,
+      default: 0,
+    },
     extras: {
       wides: {
         type: Number,
@@ -55,6 +59,25 @@ const inningsSchema = new Schema(
         ref: "Over",
       },
     ],
+    fallsOfWicket: [
+      {
+        run: Number,
+        over: Number,
+        batsman: {
+          type: Schema.Types.ObjectId,
+          ref: "Batsman",
+        },
+        bowler: {
+          type: Schema.Types.ObjectId,
+          ref: "Bowler",
+        },
+        fielder: {
+          type: Schema.Types.ObjectId,
+          ref: "Player",
+        },
+      },
+    ],
+    comentry: [],
   },
   { timestamps: true }
 );

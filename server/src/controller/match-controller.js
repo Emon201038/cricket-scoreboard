@@ -2,6 +2,7 @@ import createError from "http-errors";
 
 import { Match } from "../models/match-model.js";
 import { successResponse } from "./response-controller.js";
+import { Innings } from "../models/innings-model.js";
 
 export const handleMatchCreate = async (req, res, next) => {
   try {
@@ -38,17 +39,27 @@ export const handleMatchCreate = async (req, res, next) => {
 
 export const handleGetAllMatches = async (req, res, next) => {
   try {
-    const matches = await Match.find()
-      .populate({
+    const matches = await Match.find().populate([
+      {
         path: "toss.winner",
         model: "Team",
         select: ["name"],
-      })
-      .populate({
-        path: "teams",
+      },
+      {
+        path: "teams.team",
         model: "Team",
         select: "name",
-      });
+      },
+      {
+        path: "teams.playingXi",
+        model: "Player",
+        select: "name",
+      },
+      {
+        path: "Innings",
+        model: Innings,
+      },
+    ]);
     return successResponse(res, {
       message: "Matches are fetched successfull.",
       statusCode: 200,
@@ -62,21 +73,27 @@ export const handleGetAllMatches = async (req, res, next) => {
 export const handleFindMatchById = async (req, res, next) => {
   try {
     const id = req.params.id;
-    const match = await Match.findById(id)
-      .populate({
+    const match = await Match.findById(id).populate([
+      {
         path: "toss.winner",
         model: "Team",
         select: ["name"],
-      })
-      .populate({
-        path: "teams",
+      },
+      {
+        path: "teams.team",
         model: "Team",
         select: "name",
-      })
-      .populate({
+      },
+      {
+        path: "teams.playingXi",
+        model: "Player",
+        select: "name",
+      },
+      {
         path: "Innings",
         model: "Innings",
-      });
+      },
+    ]);
     if (!match) {
       throw createError(404, "No match found");
     }

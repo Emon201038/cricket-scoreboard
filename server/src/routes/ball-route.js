@@ -9,7 +9,7 @@ import {
 const ballRouter = express.Router();
 
 // GET: /api/v1/balls/get/:id(ballId)
-ballRouter.get("/get/:id([A-Fa-f0-9]{24})", handleGetSingleBall);
+ballRouter.get("/get/:ballId([A-Fa-f0-9]{24})", handleGetSingleBall);
 
 // GET: /api/v1/balls/:id(overId)
 ballRouter.get("/:overId([A-Fa-f0-9]{24})", handleGetAllBallsOfAnOver);

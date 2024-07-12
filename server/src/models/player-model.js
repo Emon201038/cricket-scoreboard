@@ -24,11 +24,15 @@ const playerSchema = new Schema(
         type: Number,
         default: 0,
       },
+      ballFaced: {
+        type: Number,
+        default: 0,
+      },
       average: {
         type: Number,
         default: 0,
       },
-      StrikeRate: {
+      strikeRate: {
         type: Number,
         default: 0,
       },
@@ -67,6 +71,16 @@ const playerSchema = new Schema(
         default: 0,
       },
       "5-wicket-haul": {
+        type: Number,
+        default: 0,
+      },
+    },
+    fieldingStats: {
+      catchOut: {
+        type: Number,
+        default: 0,
+      },
+      runOut: {
         type: Number,
         default: 0,
       },

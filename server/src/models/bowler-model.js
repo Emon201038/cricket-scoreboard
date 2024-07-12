@@ -1,17 +1,17 @@
 import { Schema, model } from "mongoose";
 
 const bowlerSchema = new Schema({
-  playerId: {
+  player: {
     type: Schema.Types.ObjectId,
     ref: "Player",
     required: [true, "playerId is required"],
   },
-  teamId: {
+  team: {
     type: Schema.Types.ObjectId,
     ref: "Team",
-    required: [true, "playerId is required"],
+    required: [true, "Team id is required"],
   },
-  inningsId: {
+  innings: {
     type: Schema.Types.ObjectId,
     ref: "Innings",
     required: [true, "playerId is required"],
@@ -36,6 +36,15 @@ const bowlerSchema = new Schema({
     type: Number,
     default: 0,
   },
+});
+
+bowlerSchema.pre("save", function (next) {
+  if (this.overBowled > 0) {
+    this.economy = ((this.runsConceded / this.overBowled) * 6).toFixed(2);
+  } else {
+    this.economy = 0;
+  }
+  next();
 });
 
 export const Bowler = model("Bowler", bowlerSchema);
