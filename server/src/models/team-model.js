@@ -3,6 +3,7 @@ import { Schema, model } from "mongoose";
 const teamSchema = new Schema(
   {
     name: String,
+    shortName: String,
     players: [
       {
         type: Schema.Types.ObjectId,

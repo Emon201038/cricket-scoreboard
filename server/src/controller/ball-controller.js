@@ -1,21 +1,19 @@
 import createError from "http-errors";
+import mongoose from "mongoose";
 
 import { Ball } from "../models/balls-model.js";
 import { Over } from "../models/over-model.js";
 import { successResponse } from "./response-controller.js";
-import { Player } from "../models/player-model.js";
 import { Innings } from "../models/innings-model.js";
 import { Batsman } from "../models/batsman-model.js";
-import { generate_event_of_a_ball } from "../utils/generateEvent.js";
 import { Bowler } from "../models/bowler-model.js";
 import { Match } from "../models/match-model.js";
-import mongoose from "mongoose";
 import {
   handleBatsmanOut,
-  // MatchManager,
   updateBatsmanStat,
   updateBowlerStat,
 } from "../helper/ballHelper.js";
+import { getBattingBowlingTeam } from "../utils/getBattingBowlingTeam.js";
 
 export const handleGetAllBallsOfAnOver = async (req, res, next) => {
   try {
@@ -87,22 +85,8 @@ export const handleCreateBall = async (req, res, next) => {
       Innings: { $in: [new mongoose.Types.ObjectId(over.inningsId)] },
     }).session(session);
 
-    const battingTeam =
-      match.toss.decision === "bat"
-        ? match.teams.find(
-            (t) => t.team.toString() === match.toss.winner.toString()
-          )
-        : match.teams.find(
-            (t) => t.team.toString() !== match.toss.winner.toString()
-          );
-    const bowlingTeam =
-      match.toss.decision === "bowl"
-        ? match.teams.find(
-            (t) => t.team.toString() === match.toss.winner.toString()
-          )
-        : match.teams.find(
-            (t) => t.team.toString() !== match.toss.winner.toString()
-          );
+    const battingTeam = getBattingBowlingTeam(match, "bat");
+    const bowlingTeam = getBattingBowlingTeam(match, "bowl");
 
     //checking over previous balls
     let legalBallsCount = over.balls.filter((item) => {
@@ -167,7 +151,7 @@ export const handleCreateBall = async (req, res, next) => {
       overId,
     });
 
-    (await createdBall.save({ session })).populate("bowler", "name");
+    await createdBall.save({ session });
 
     const ball = await Ball.findById(createdBall._id)
       .populate([
@@ -218,10 +202,11 @@ export const handleCreateBall = async (req, res, next) => {
 
     await Innings.findByIdAndUpdate(bowler.innings, {
       $inc: {
-        runs:
+        runs: Number(
           extras?.type === "wide" || extras?.type === " no-ball"
             ? runs + 1 + (extras?.runs || 0)
-            : runs + (extras?.runs || 0),
+            : runs + (extras?.runs || 0)
+        ),
         balls: extras
           ? extras.type === "wide" || extras.type === "no-ball"
             ? 0
@@ -230,6 +215,17 @@ export const handleCreateBall = async (req, res, next) => {
       },
     }).session(session);
 
+    match.live.runs += Number(
+      extras?.type === "wide" || extras?.type === " no-ball"
+        ? runs + 1 + (extras?.runs || 0)
+        : runs + (extras?.runs || 0)
+    );
+    match.live.ball += Number(
+      extras ? (extras.type === "wide" || extras.type === "no-ball" ? 0 : 1) : 1
+    );
+    match.live.wicket += Number(wicket ? 1 : 0);
+
+    await match.save({ session });
     const updatedOver = await Over.findByIdAndUpdate(
       overId,
       {
@@ -252,9 +248,9 @@ export const handleCreateBall = async (req, res, next) => {
       })
       .session(session);
 
-    const playingBatsman = await Batsman.find({ status: "not out" }).session(
-      session
-    );
+    const playingBatsman = await Batsman.find({ status: "not out" })
+      .populate("player", "name")
+      .session(session);
 
     const updatedLegalBalls = updatedOver.balls.filter((item) => {
       return (
@@ -295,7 +291,10 @@ export const handleCreateBall = async (req, res, next) => {
       ball,
       extras,
       runs,
-      session
+      session,
+      match,
+      bowler,
+      innings
     );
 
     await updateBowlerStat(ball, updatedOver, extras, session);
@@ -320,31 +319,6 @@ export const handleEditBall = async (req, res, next) => {
     return successResponse(res, {
       message: "Ball is updated successfull.",
       statusCode: 200,
-    });
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const handleChangeStrike = async (req, res, next) => {
-  try {
-    const batsman = await Batsman.find({ status: "not out" });
-    if (batsman.length < 2) {
-      throw createError(400, "Please add 1 more batsman to shuffle strike");
-    }
-
-    const striker = batsman.find((b) => b.isStriker);
-    const nonStriker = batsman.find((b) => !b.isStriker);
-
-    striker.isStriker = !striker.isStriker;
-    nonStriker.isStriker = !nonStriker.isStriker;
-
-    await striker.save();
-    await nonStriker.save();
-
-    return successResponse(res, {
-      message: "Strike rotate successfull",
-      payload: { striker, nonStriker },
     });
   } catch (error) {
     next(error);

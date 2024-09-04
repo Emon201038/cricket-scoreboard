@@ -201,3 +201,34 @@ export const handle_add_playing_players_to_innings = async (req, res, next) => {
     next(error);
   }
 };
+
+export const handle_get_falls_of_wicket = async (req, res, next) => {
+  try {
+    const inningsId = req.params.inningsId;
+    const innings = await Innings.findById(inningsId)
+      .select([
+        "fallsOfWicket.batsman",
+        "fallsOfWicket.run",
+        "fallsOfWicket.over",
+      ])
+      .populate({
+        path: "fallsOfWicket.batsman",
+        select: "player",
+        populate: {
+          path: "player",
+          select: "name",
+        },
+      });
+    if (!innings) {
+      throw createError(404, "No innings found");
+    }
+
+    return successResponse(res, {
+      statusCode: 200,
+      message: "Fall of wickets found successfully",
+      payload: innings.fallsOfWicket,
+    });
+  } catch (error) {
+    next(error);
+  }
+};

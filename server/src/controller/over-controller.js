@@ -108,16 +108,15 @@ export const handleCreateOver = async (req, res, next) => {
       );
     }
 
+    //checking the selected bowler is bowled previous over or not
     const prevOvers = await Over.find({ inningsId })
       .populate({
         path: "balls",
         model: "Ball",
       })
       .lean();
-
     if (prevOvers.length > 0) {
       const lastOver = prevOvers[prevOvers.length - 1];
-      console.log(lastOver.bowler.toString(), bowlerId.toString());
       if (lastOver.bowler.toString() === bowlerId.toString()) {
         throw createError(
           400,
@@ -125,13 +124,13 @@ export const handleCreateOver = async (req, res, next) => {
         );
       }
 
+      //checking previous over is finished or not
       const legalBall = lastOver?.balls.filter((item) => {
         return (
           item.extras === null ||
           (item.extras.type !== "wide" && item.extras.type !== "no-ball")
         );
       }).length;
-      console.log(legalBall);
       if (legalBall < 6) {
         throw createError(
           400,
@@ -139,7 +138,6 @@ export const handleCreateOver = async (req, res, next) => {
         );
       }
     }
-
     if (player.team.toString() !== req.body.team?.toString()) {
       throw createError(
         400,
@@ -147,6 +145,9 @@ export const handleCreateOver = async (req, res, next) => {
       );
     }
 
+    const match = await Match.findById(innings.matchId._id).session(session);
+
+    //checking bowler is new or not
     const prevBowler = await Bowler.findOne({ player: bowlerId });
     if (!prevBowler) {
       const newbowler = new Bowler({
@@ -155,14 +156,18 @@ export const handleCreateOver = async (req, res, next) => {
         team: req.body.team,
       });
 
-      await newbowler.save({ session });
-    }
+      const createdBowler = await newbowler.save({ session });
 
-    console.log(bowlerId, inningsId);
+      match.live.bowler = newbowler._id;
+    } else {
+      match.live.bowler = prevBowler._id;
+    }
 
     const over = new Over({ bowler: bowlerId, inningsId });
 
     await over.save({ session });
+
+    await match.save({ session });
     if (!over) {
       throw createError(500, "Failed to create over. Please try again");
     }

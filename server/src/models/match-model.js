@@ -9,7 +9,7 @@ const matchSchema = new Schema(
     venue: String,
     status: {
       type: String,
-      default: "live",
+      enum: ["upcoming", "delay", "live", "innings break", "suspended"],
     },
     maxOver: {
       type: Number,
@@ -55,6 +55,61 @@ const matchSchema = new Schema(
         type: String,
         enum: ["bat", "bowl"],
       },
+    },
+    live: {
+      innings: Number,
+      battingTeam: {
+        type: Schema.Types.ObjectId,
+        ref: "Team",
+      },
+      runs: {
+        type: Number,
+        default: 0,
+      },
+      wicket: {
+        type: Number,
+        default: 0,
+      },
+      ball: {
+        type: Number,
+        default: 0,
+      },
+      bowlingTeam: {
+        type: Schema.Types.ObjectId,
+        ref: "Team",
+      },
+      batsmans: [
+        {
+          type: Schema.Types.ObjectId,
+          ref: "Batsman",
+        },
+      ],
+      bowler: {
+        type: Schema.Types.ObjectId,
+        ref: "Bowler",
+      },
+      commentary: [
+        {
+          ball: { type: Number, required: true },
+          batsman: { type: String, required: true },
+          bowler: { type: String, required: true },
+          commentary: { type: String, required: true },
+          event: String,
+          isWicket: Boolean,
+          runs: { type: Number, required: true },
+          type: {
+            type: String,
+            enum: ["normal", "milestone", "wicket"],
+            required: true,
+          },
+          milestone: { type: String },
+        },
+      ],
+      status: {
+        type: String,
+        enum: ["upcoming", "delay", "live", "innings break", "suspended"],
+      },
+      result: String,
     },
     result: String,
   },

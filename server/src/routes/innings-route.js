@@ -3,6 +3,7 @@ import {
   handle_add_playing_players_to_innings,
   handle_create_innings,
   handle_get_all_innings_of_a_match,
+  handle_get_falls_of_wicket,
   handle_get_single_innings,
 } from "../controller/innings-controller.js";
 
@@ -28,6 +29,11 @@ inningsRouter.put(
 inningsRouter.get(
   "/get/:inningsId([a-fA-F0-9]{24})",
   handle_get_single_innings
+);
+
+inningsRouter.get(
+  "/fallsOfWicket/:inningsId([a-fA-F0-9]{24})",
+  handle_get_falls_of_wicket
 );
 
 export { inningsRouter };

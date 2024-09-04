@@ -2,6 +2,7 @@ import { Ball } from "../models/balls-model.js";
 import { Batsman } from "../models/batsman-model.js";
 import { Bowler } from "../models/bowler-model.js";
 import { Innings } from "../models/innings-model.js";
+import { Match } from "../models/match-model.js";
 import { Over } from "../models/over-model.js";
 import { Player } from "../models/player-model.js";
 import { generateDismissalText } from "../utils/generateEvent.js";
@@ -12,20 +13,39 @@ export const updateBatsmanStat = async (
   ball = {},
   extras,
   runs,
-  session
+  session,
+  match,
+  bowler,
+  innings
 ) => {
   let striker = playingBatsman.find((b) => b.isStriker);
   let non_striker = playingBatsman.find((b) => !b.isStriker);
+  const commentary = {
+    ball: innings.balls,
+    batsman: striker._id,
+    bowler: bowler._id,
+    event: ball.event,
+    isWicket: false,
+    type: "normal",
+    runs: ball.runs,
+  };
   if (runs % 2 === 1) {
     if (!extras) {
       if (striker) {
+        console.log(striker, "striker is detected");
         striker.runs += runs;
         striker.ballsFaced += 1;
+        commentary.commentary = `${bowler.player.name} to ${striker.player.name},Batsman plays it for ${ball.runs}`;
       }
     }
     if (extras?.type === "byes" || extras?.type === "leg-byes") {
       if (striker) {
         striker.ballsFaced += 1;
+        if (extras.type === "byes") {
+          commentary.commentary = `${bowler.player.name} to ${striker.player.name},Batsman plays it but he missed it, wicket keeper missed it as well. As a result batting team get ${extras.runs} runs`;
+        } else {
+          commentary.commentary = `${bowler.player.name} to ${striker.player.name},Batsman plays it but he missed it and umpire just confirmed that is was leg byes and batsman manage to get ${extras.runs} runs`;
+        }
       }
     }
     if (updatedLegalBalls < 6) {
@@ -43,12 +63,16 @@ export const updateBatsmanStat = async (
     if (!extras) {
       if (striker) {
         striker.runs += runs;
+
         if (runs === 4) {
           striker["4s"] += 1;
+          commentary.commentary = `${bowler.player.name} to ${striker.player.name},Batsman plays it very well and he get 4 runs`;
         }
         if (runs === 6) {
           striker["6s"] += 1;
+          commentary.commentary = `${bowler.player.name} to ${striker.player.name},Batsman plays it over the boundary and he get 4 runs`;
         }
+        commentary.commentary = `${bowler.player.name} to ${striker.player.name},Batsman plays it for ${ball.runs}`;
         striker.ballsFaced += 1;
       }
     }
@@ -63,6 +87,10 @@ export const updateBatsmanStat = async (
     await non_striker.save({ session });
     // await over.save();
   }
+
+  console.log(commentary);
+  match.live.commentary.push(commentary);
+  await match.save({ session });
 };
 
 export const handleBatsmanOut = async (
@@ -86,18 +114,47 @@ export const handleBatsmanOut = async (
         select: "name",
       },
     },
+    {
+      path: "batsman",
+      select: "player",
+      populate: {
+        path: "player",
+        select: "name",
+      },
+    },
   ]);
 
-  console.log(createdBall);
   const wicket = ball?.wicket || null;
   if (wicket) {
     const innings = await Innings.findById(updatedOver.inningsId).session(
       session
     );
+
+    const match = await Match.findById(innings.matchId).session(session);
+
+    //removing out batsman from match live batsmans
+    const notOutBatsman = match.live.batsmans.filter(
+      (b) => b.toString() !== wicket.outBatsman.toString()
+    );
+    match.live.batsmans.push(notOutBatsman);
+
+    //created commentary object
+    const commentary = {
+      ball: innings.balls,
+      batsman: wicket.outBatsman,
+      bowler,
+      event: w,
+      isWicket: true,
+      type: "wicket",
+      runs: createdBall.runs,
+    };
+
+    //handle run out logic
     if (wicket.type === "run out") {
-      const outBatsman = await Batsman.findById(wicket.outBatsman).session(
-        session
-      );
+      const outBatsman = await Batsman.findById(wicket.outBatsman)
+        .populate("player", "name")
+        .session(session);
+
       if (outBatsman.isStriker) {
         outBatsman.isStriker = false;
       }
@@ -144,7 +201,15 @@ export const handleBatsmanOut = async (
           (outPlayer.battingStats.matches + 1),
       };
       await outBatsman.save({ session });
+
+      commentary.dismissal = generateDismissalText(
+        wicket,
+        createdBall.wicket.fielder,
+        createdBall.bowler
+      );
+      commentary.commentary = `${createdBall.bowler.player.name} to ${createdBall.batsman.player.name}, WICKET!! RUN-OUT!!! There was miscommunication between them. As a result ${createdBall.wicket?.fielder?.name} throw the to wicket and ${outBatsman.player.name} is gone!`;
     } else {
+      //handle other out logic
       const outBatsman = await Batsman.findById(wicket.outBatsman).session(
         session
       );
@@ -196,10 +261,19 @@ export const handleBatsmanOut = async (
           (outPlayer.battingStats.matches + 1),
       };
       await outPlayer.save({ session });
+
+      commentary.dismissal = generateDismissalText(
+        wicket,
+        createdBall.wicket.fielder,
+        createdBall.bowler
+      );
+      commentary.commentary = `${createdBall.bowler.player.name} to ${createdBall.batsman.player.name}, WICKET!! ${wicket.type}!!! `;
     }
 
     updatedOver.wicket += 1;
     innings.wickets += 1;
+    match.live.commentary.push(commentary);
+    await match.save(session);
     await innings.save({ session });
     await updatedOver.save({ session });
   }

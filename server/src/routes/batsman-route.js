@@ -5,6 +5,7 @@ import {
   handle_get_all_batsman,
   handle_get_not_out_batsman,
   handle_get_single_batsman,
+  handleChangeStriker,
 } from "../controller/batsman-controller.js";
 
 const batsmanRouter = express.Router();
@@ -26,6 +27,9 @@ batsmanRouter.get(
   "/get/:batsmanId([a-fA-F0-9]{24})/",
   handle_get_single_batsman
 );
+
+//GET:-> /api/v1/batsman/updateStriker
+batsmanRouter.get("/updateStriker", handleChangeStriker);
 
 //GET:-> /api/v1/batsman/edit/:batsmanId
 batsmanRouter.put("/edit/:batsmanId([a-fA-F0-9]{24})/", handle_edit_batsman);

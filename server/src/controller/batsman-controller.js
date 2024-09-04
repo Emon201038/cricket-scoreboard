@@ -73,6 +73,12 @@ export const handle_create_batsman = async (req, res, next) => {
       Innings: { $in: [new mongoose.Types.ObjectId(inningsId)] },
     });
 
+    if (match.live.batsmans.length > 1) {
+      throw createError(
+        400,
+        "You have 2 batsman in live batsman. Please remove one then try again"
+      );
+    }
     const battingTeam =
       match.toss.decision === "bat"
         ? match.teams.find(
@@ -108,6 +114,9 @@ export const handle_create_batsman = async (req, res, next) => {
       inningsId,
       isStriker: striker,
     });
+
+    match.live.batsmans.push(batsman._id);
+    await match.save();
     return successResponse(res, {
       message: "Batsman created successfull",
       statusCode: 201,
@@ -174,6 +183,38 @@ export const handle_get_not_out_batsman = async (req, res, next) => {
     return successResponse(res, {
       message: "Batsman found successfull",
       payload: batsman,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const handleChangeStriker = async (req, res, next) => {
+  try {
+    const batsman = await Batsman.find({ status: "not out" });
+    if (batsman.length < 2) {
+      throw createError(400, "Please add 1 more batsman to shuffle strike");
+    }
+
+    const striker = batsman.find((b) => b.isStriker);
+    const nonStriker = batsman.find((b) => !b.isStriker);
+
+    striker.isStriker = !striker.isStriker;
+    nonStriker.isStriker = !nonStriker.isStriker;
+
+    await striker.save();
+    await nonStriker.save();
+
+    const match = await Match.findOne({
+      Innings: { $in: [new mongoose.Types.ObjectId(batsman[0].inningsId)] },
+    });
+
+    match.live.batsmans.push(nonStriker._id, striker._id);
+    await match.save();
+
+    return successResponse(res, {
+      message: "Strike rotate successfull",
+      payload: { striker, nonStriker },
     });
   } catch (error) {
     next(error);

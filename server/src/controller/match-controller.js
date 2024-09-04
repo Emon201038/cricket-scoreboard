@@ -47,12 +47,10 @@ export const handleGetAllMatches = async (req, res, next) => {
       },
       {
         path: "teams.team",
-        model: "Team",
         select: "name",
       },
       {
         path: "teams.playingXi",
-        model: "Player",
         select: "name",
       },
       {
@@ -60,6 +58,7 @@ export const handleGetAllMatches = async (req, res, next) => {
         model: Innings,
       },
     ]);
+    console.log(matches[1].teams);
     return successResponse(res, {
       message: "Matches are fetched successfull.",
       statusCode: 200,
